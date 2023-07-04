@@ -35,6 +35,22 @@ public class Emp {
       Emp e = new Emp("Ialy", 25);
       Map <String , Object> att = new ModelView().addItem("emp",e);
       ModelView mv = new ModelView();
+      mv.setView(jsp);  mv.setAttribut(att);
+      return mv;
+    }
+    @Url(url="form_Emp")
+    public ModelView form(){
+      String jsp = "form.jsp";
+      ModelView mv = new ModelView();
+      mv.setView(jsp);
+      return mv;
+    }
+    @Url(url="save_Emp")
+    public ModelView save(){
+      String jsp = "save.jsp";
+      ModelView mv = new ModelView();
+      Emp e = new Emp(this.getnom(), this.getage());
+      Map<String, Object> att = new ModelView().addItem("emp",e);
       mv.setView(jsp);
       mv.setAttribut(att);
       return mv;
