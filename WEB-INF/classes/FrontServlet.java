@@ -1,6 +1,7 @@
 package etu2064.framework.servlet;
 
 import etu2064.framework.Mapping;
+import etu2064.framework.view.ModelView;
 import etu2064.framework.myAnnotations.Url;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
@@ -25,6 +26,14 @@ import java.util.Map;
 
 public class FrontServlet  extends HttpServlet{
      HashMap<String,Mapping> mappingUrls = new HashMap<String,Mapping>();
+     String modele ;
+     //INIT
+     public void init(ServletConfig config) throws ServletException {
+         super.init(config);
+         modele = getInitParameter("package");
+         String path = getServletContext().getRealPath("/WEB-INF/classes/"+modele);
+         fillMappingUrls(path);
+     }
     //GET
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws  ServletException, IOException  {
         res.setContentType("text/plain");
@@ -56,34 +65,34 @@ public class FrontServlet  extends HttpServlet{
         ServletContext result = this.getServletContext();
         try {        
             /// Display URL 
-            out.print("URL Tomcat = ");
             String projet = req.getRequestURL().toString();
             String host = req.getHeader("Host");
 
             String[] partieUrl = projet.split(host);
             String chemin = partieUrl[1].substring(1);
-            out.print("/"+chemin);
 
-            String modele = "etu2064/framework/modele/";
-            String path = getServletContext().getRealPath("/WEB-INF/classes/"+modele);
-            out.print("Package ="+path);
+            String action = chemin.substring(chemin.lastIndexOf("/") + 1);
+            String packageName = modele.replace("/", ".");
+          
+            ///--Display vue
+            if (mappingUrls.containsKey(action)) {
+                Mapping valeur = mappingUrls.get(action);
 
-            fillMappingUrls(path);
+                Class<?> maClasse = Class.forName(packageName+valeur.getClassName());
+                Object obj = maClasse.newInstance();
 
-            ///--Display Annotation
-           ArrayList<String> Sclass = getClassNames(path);
-           for (int i = 0; i < Sclass.size(); i++) {
-                  out.print("<p>"+Sclass.get(i)+"</p>");
-           }
-            ///--Display Annotation
-            for (Map.Entry<String, Mapping> entry : mappingUrls.entrySet()) {
-                out.println("<p><strong>Annotation  </strong>: \"" + entry.getKey() + "\"</p>");
-                out.println("<p><strong>Class </strong>:" + entry.getValue().getClassName()+"</p>");
-                out.println("<p><strong>Method </strong>:" + entry.getValue().getMethod()+"</p>");
-                out.println("\n\n");
+                Method maMethode = maClasse.getDeclaredMethod(valeur.getMethod());
+                Class<?> returnType = maMethode.getReturnType();        
+                if (returnType.equals(ModelView.class)) {
+                    ModelView mv = (ModelView)maMethode.invoke(obj); 
+                    RequestDispatcher dispat = req.getRequestDispatcher(mv.getView());
+                    dispat.forward(req,res);
+                }else{
+                    out.println("<p>Aucune vue disponible</p>");
+                }
             }
         }catch (Exception e) {
-            e.printStackTrace(out);
+            out.println("<p>erreur de deploiement</p>");
         }
     }
     //SEARCH CLASS
