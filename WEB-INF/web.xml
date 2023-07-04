@@ -11,7 +11,6 @@
     <servlet>
         <servlet-name>FrontServlet</servlet-name>
         <servlet-class>etu2064.framework.servlet.FrontServlet</servlet-class>
-       
     </servlet>
 <!--Sprint1-->    
     <servlet-mapping>
@@ -19,5 +18,10 @@
       <url-pattern>/*</url-pattern>
     </servlet-mapping>
 
+    <session-config>
+       <session-timeout>30</session-timeout>
+    </session-config>
+
+   
    
  </web-app>

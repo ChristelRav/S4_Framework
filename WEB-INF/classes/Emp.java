@@ -17,7 +17,7 @@ public class Emp {
         this.setage(age);
     }
 
-    @Url(url="findAll_Person")
+    @Url(url="findAll_Emp")
     public String findAll(){
       String ok = "Coucou";
       return ok;
