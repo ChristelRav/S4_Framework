@@ -1,7 +1,6 @@
 package etu2064.framework.servlet;
 
-
-import etu2064.framework.myAnnotations.Url;
+import etu2064.framework.Mapping;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -22,11 +21,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import etu2064.framework.Mapping;
-
 
 public class FrontServlet  extends HttpServlet{
-   
+     HashMap<String,Mapping> mappingUrls = new HashMap<String,Mapping>();
     //GET
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws  ServletException, IOException  {
         res.setContentType("text/plain");
