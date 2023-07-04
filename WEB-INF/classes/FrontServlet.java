@@ -85,6 +85,12 @@ public class FrontServlet  extends HttpServlet{
                 Class<?> returnType = maMethode.getReturnType();        
                 if (returnType.equals(ModelView.class)) {
                     ModelView mv = (ModelView)maMethode.invoke(obj); 
+                    ///--envoie de qlq choz
+                    for (Map.Entry<String, Object> entry : mv.getAttribut().entrySet()) {
+                        String cle = entry.getKey();
+                        Object vl = entry.getValue();
+                        req.setAttribute(cle,vl);
+                    }
                     RequestDispatcher dispat = req.getRequestDispatcher(mv.getView());
                     dispat.forward(req,res);
                 }else{
@@ -92,7 +98,7 @@ public class FrontServlet  extends HttpServlet{
                 }
             }
         }catch (Exception e) {
-            out.println("<p>erreur de deploiement</p>");
+            out.println(e.getMessage());
         }
     }
     //SEARCH CLASS
