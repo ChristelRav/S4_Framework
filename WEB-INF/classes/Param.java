@@ -1,11 +1,10 @@
 package etu2064.framework.myAnnotations;
 
 import java.lang.annotation.*;
-@Documented
-@Target({ElementType.METHOD})
-@Inherited
-@Retention(RetentionPolicy.RUNTIME)
 
-public @interface Url {
-    String url () default "";
+@Documented
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Param {
+    String p() default "";
 }
