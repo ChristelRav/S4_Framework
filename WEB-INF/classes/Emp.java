@@ -1,6 +1,6 @@
 package etu2064.framework.modele;
 
-import etu2064.framework.myAnnotations.Url;
+import etu2064.framework.myAnnotations.*;
 import etu2064.framework.view.ModelView;
 
 import java.util.Map;
@@ -50,6 +50,16 @@ public class Emp {
       String jsp = "save.jsp";
       ModelView mv = new ModelView();
       Emp e = new Emp(this.getnom(), this.getage());
+      Map<String, Object> att = new ModelView().addItem("emp",e);
+      mv.setView(jsp);
+      mv.setAttribut(att);
+      return mv;
+    }
+    @Url(url="loaded_Emp")
+    public ModelView load(@Param(p="nom")String nom , @Param(p="age")int age){
+      String jsp = "get.jsp";
+      ModelView mv = new ModelView();
+      Emp e = new Emp(nom, age);
       Map<String, Object> att = new ModelView().addItem("emp",e);
       mv.setView(jsp);
       mv.setAttribut(att);

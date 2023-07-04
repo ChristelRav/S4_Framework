@@ -3,6 +3,7 @@ package etu2064.framework.servlet;
 import etu2064.framework.Mapping;
 import etu2064.framework.view.ModelView;
 import etu2064.framework.myAnnotations.Url;
+import etu2064.framework.myAnnotations.Param;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.RequestDispatcher;
 import java.text.SimpleDateFormat;
+import java.lang.reflect.*;
 import java.sql.*; 
 
 import java.lang.annotation.Annotation;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Vector;
 
 
 public class FrontServlet  extends HttpServlet{
@@ -82,37 +85,36 @@ public class FrontServlet  extends HttpServlet{
 
                 Class<?> maClasse = Class.forName(packageName+valeur.getClassName());
                 Object obj = maClasse.newInstance();
-
-                Method maMethode = maClasse.getDeclaredMethod(valeur.getMethod());
-                Class<?> returnType = maMethode.getReturnType();        
-                if (returnType.equals(ModelView.class)) {
-                    Field [] field = obj.getClass().getDeclaredFields();
-                    Enumeration<String> paramNames = req.getParameterNames();
-                    while (paramNames.hasMoreElements()) {
-                        String paramName = paramNames.nextElement();
-                        out.print("<p>"+field[0].getName()+"//"+paramName+"</p>");
-                        //Verifier si le parametre fait partie des attributs de la classe 
-                        for(int j=0;j<field.length;j++)  {
-                            if(field[j].getName().equals(paramName)) {
-                                String[] paramValues = req.getParameterValues(paramName);
-                                Method method= obj.getClass().getMethod("set"+field[j].getName(), field[j].getType());
-                                Object paramValue = castValue(field[j].getType(),paramValues[0]);
-                                out.print("<p>"+paramValue+"</p>");
-                                method.invoke(obj,paramValue);
+                Method[] methods = maClasse.getDeclaredMethods();
+                for (int i = 0; i < methods.length; i++) {
+                    if(methods[i].getName().equals(valeur.getMethod())){
+                        Class<?> returnType = methods[i].getReturnType();
+                        if (returnType.equals(ModelView.class)) { 
+                            Enumeration<String> paramNames = req.getParameterNames();
+                            ModelView mv = null;
+                            Parameter[] parameters = methods[i].getParameters();
+                            Object[] arg = arg = new Object[parameters.length];
+                            out.print(parameters.length);
+                            //Choix  avec ou sans parmetre ilay methode
+                            if(parameters.length == 0){
+                                processNoParams(req, obj);
+                                mv = (ModelView) methods[i].invoke(obj);                            
+                            }else if(parameters.length > 0){
+                                processParams(req, parameters, arg);
+                                mv = (ModelView) methods[i].invoke(obj, arg);   
                             }
+                            ///--envoie de qlq choz
+                            for (Map.Entry<String, Object> entry : mv.getAttribut().entrySet()) {
+                                String cle = entry.getKey();
+                                Object vl = entry.getValue();
+                                req.setAttribute(cle,vl);
+                            }
+                            RequestDispatcher dispat = req.getRequestDispatcher(mv.getView());
+                            dispat.forward(req,res);
+                        } else{
+                            out.println("<p>Aucune vue disponible</p>");
                         }
                     }
-                    ModelView mv = (ModelView)maMethode.invoke(obj); 
-                    ///--envoie de qlq choz
-                    for (Map.Entry<String, Object> entry : mv.getAttribut().entrySet()) {
-                        String cle = entry.getKey();
-                        Object vl = entry.getValue();
-                        req.setAttribute(cle,vl);
-                    }
-                    RequestDispatcher dispat = req.getRequestDispatcher(mv.getView());
-                    dispat.forward(req,res);
-                }else{
-                    out.println("<p>Aucune vue disponible</p>");
                 }
             }
         }catch (Exception e) {
@@ -183,5 +185,36 @@ public class FrontServlet  extends HttpServlet{
             return null;
         }
     }
-   
-}
+    private void processNoParams(HttpServletRequest req, Object obj) throws Exception {
+        Enumeration<String> paramNames = req.getParameterNames();
+        Field[] fields = obj.getClass().getDeclaredFields();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            for (Field field : fields) {
+                if (field.getName().equals(paramName)) {
+                    String[] paramValues = req.getParameterValues(paramName);
+                    Method method = obj.getClass().getMethod("set" + field.getName(), field.getType());
+                    Object paramValue = castValue(field.getType(), paramValues[0]);
+                    method.invoke(obj, paramValue);
+                }
+            }
+        }
+    }
+    private void processParams(HttpServletRequest req, Parameter[] parameters, Object[] arg) throws Exception {
+        Enumeration<String> paramNames = req.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            for (int j = 0; j < parameters.length; j++) {
+                if (paramName.equals(parameters[j].getAnnotation(Param.class).p())) {
+                    String[] paramValues = req.getParameterValues(paramName);
+                    if (paramValues != null && paramValues.length == 1) {
+                        arg[j] = castValue(parameters[j].getType(), paramValues[0]);
+                    }
+                }
+            }
+        }
+    }
+        
+
+
+}   
