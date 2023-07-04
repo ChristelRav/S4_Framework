@@ -1,6 +1,7 @@
 package etu2064.framework.modele;
 
 import etu2064.framework.myAnnotations.Url;
+import etu2064.framework.view.ModelView;
 
 import java.util.Map;
 
@@ -18,10 +19,19 @@ public class Emp {
     }
 
     @Url(url="findAll_Emp")
-    public String findAll(){
-      String ok = "Coucou";
-      return ok;
+    public ModelView findAllEmp(){
+      String jsp = "load.jsp";
+      ModelView mv = new ModelView();
+      mv.setView(jsp);
+      return mv;
     }
+
+    @Url(url="simple_Emp")
+    public String simple(){
+      String sp = "Coucou";
+      return sp;
+    }
+    
 
 
 }

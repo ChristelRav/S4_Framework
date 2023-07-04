@@ -11,11 +11,15 @@
     <servlet>
         <servlet-name>FrontServlet</servlet-name>
         <servlet-class>etu2064.framework.servlet.FrontServlet</servlet-class>
+        <init-param>
+            <param-name>package</param-name>
+            <param-value>etu2064/framework/modele/</param-value>
+        </init-param>
     </servlet>
 <!--Sprint1-->    
     <servlet-mapping>
       <servlet-name>FrontServlet</servlet-name>
-      <url-pattern>/*</url-pattern>
+      <url-pattern>/</url-pattern>
     </servlet-mapping>
 
     <session-config>
