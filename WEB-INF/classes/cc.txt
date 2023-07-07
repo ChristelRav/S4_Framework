@@ -39,15 +39,15 @@ import java.util.Vector;
 
 @MultipartConfig
 public class FrontServlet  extends HttpServlet{
-     HashMap<String,Mapping> mappingUrls = new HashMap<String,Mapping>();
-     String modele ;
-     //INIT
-     public void init(ServletConfig config) throws ServletException {
-         super.init(config);
-         modele = getInitParameter("package");
-         String path = getServletContext().getRealPath("/WEB-INF/classes/"+modele);
-         fillMappingUrls(path);
-     }
+    HashMap<String,Mapping> mappingUrls = new HashMap<String,Mapping>();
+    String modele ;
+    //INIT
+    public void init(ServletConfig config) throws ServletException {
+        super.init(config);
+        modele = getInitParameter("package");
+        String path = getServletContext().getRealPath("/WEB-INF/classes/"+modele);
+        fillMappingUrls(path);
+    }
     //GET
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws  ServletException, IOException  {
         res.setContentType("text/plain");
@@ -65,18 +65,21 @@ public class FrontServlet  extends HttpServlet{
         res.setContentType("text/plain");
         PrintWriter out = res.getWriter();
 
-        try{             
-            processRequest(req,res);     
+        try{     
+           out.print("HUHU");  
+            processRequest(req,res);
+            out.print("HUHU1");        
         }catch(Exception exp){
             out.print(exp);
         }
     }
- 
+
     //PROCESS REQUEST
     public void processRequest(HttpServletRequest req,HttpServletResponse res)throws IOException , Exception , ServletException{
         res.setContentType("text/html");
         PrintWriter out = res.getWriter();
         ServletContext result = this.getServletContext();
+        out.print("HUHU3");
         try {        
             /// Display URL 
             String projet = req.getRequestURL().toString();
@@ -87,7 +90,8 @@ public class FrontServlet  extends HttpServlet{
 
             String action = chemin.substring(chemin.lastIndexOf("/") + 1);
             String packageName = modele.replace("/", ".");
-          
+            
+            out.print("HUHU4");
             ///--Display vue
             if (mappingUrls.containsKey(action)) {
                 Mapping valeur = mappingUrls.get(action);
@@ -95,35 +99,62 @@ public class FrontServlet  extends HttpServlet{
                 Class<?> maClasse = Class.forName(packageName+valeur.getClassName());
                 Object obj = maClasse.newInstance();
                 Method[] methods = maClasse.getDeclaredMethods();
+                out.print("HUHU5");
                 for (int i = 0; i < methods.length; i++) {
                     if(methods[i].getName().equals(valeur.getMethod())){
                         Class<?> returnType = methods[i].getReturnType();
                         if (returnType.equals(ModelView.class)) { 
+                            out.print("HUHU6");
                             Enumeration<String> paramNames = req.getParameterNames();
-                            ModelView mv = null;
+                            ModelView mv = new ModelView();
                             Parameter[] parameters = methods[i].getParameters();
                             Object[] arg = arg = new Object[parameters.length];
-                            out.print(parameters.length);
                             //Choix  avec ou sans parmetre ilay methode
                             if(parameters.length == 0){
-                                processNoParams(req, obj);  
-                                mv = (ModelView) methods[i].invoke(obj);        
+                                out.print("HUHU7");
+                                processNoParams(req, obj);
+                                mv = (ModelView) methods[i].invoke(obj); 
+                                System.out.println(mv);                        
                             }else if(parameters.length > 0){
-                                processParams(req ,res , parameters, arg, out);
-                                mv = (ModelView) methods[i].invoke(obj, arg); 
+                                out.print("HUHU8");
+                               for (int j = 0; j < parameters.length; j++) {
+                                    out.print("<p>"+parameters[j].getType()+"</p>");
+                                    if(parameters[j].getType() == FileUpload.class){
+                                        FileUpload fl = new FileUpload();
+                                        String uploadPath = getServletContext().getRealPath("") + File.separator + "dev";
+                                        File uploadDir = new File(uploadPath);
+                                        if (!uploadDir.exists()) {
+                                            uploadDir.mkdir();
+                                        }
+                                        List<Part> parts = (List<Part>) req.getParts();
+                                        for (Part part : parts) {
+                                            res.getWriter().println(parts);
+                                            String fileName = extractFileName(part);
+                                            part.write(uploadPath + File.separator + fileName);
+                                            fl.setnameFile(fileName);
+                                        }
+                                        mv = (ModelView) methods[i].invoke(obj); 
+                                        out.print("<p>"+mv.getView()+"</p>");
+                                        res.getWriter().println("Les fichiers ont été uploadés avec succès !");
+                                    }else{
+                                        processParams(req, parameters, arg);
+                                        mv = (ModelView) methods[i].invoke(obj, arg);
+                                    }
+                               }
                             }
+                             ///--envoie de qlq choz
                             for (Map.Entry<String, Object> entry : mv.getAttribut().entrySet()) {
                                 String cle = entry.getKey();
                                 Object vl = entry.getValue();
                                 req.setAttribute(cle,vl);
                             }
                             RequestDispatcher dispat = req.getRequestDispatcher(mv.getView());
-                            dispat.forward(req,res);                           
-                            } else{
-                                out.println("<p>Aucune vue disponible</p>");
-                            }
+                            dispat.forward(req,res);
+                        } else{
+                            out.println("<p>Aucune vue disponible</p>");
                         }
                     }
+                }
             }
         }catch (Exception e) {
             out.println(e.getMessage());
@@ -193,7 +224,7 @@ public class FrontServlet  extends HttpServlet{
             return null;
         }
     }
-    private void processNoParams(HttpServletRequest req, Object obj) throws Exception {
+    public void processNoParams(HttpServletRequest req, Object obj) throws Exception {
         Enumeration<String> paramNames = req.getParameterNames();
         Field[] fields = obj.getClass().getDeclaredFields();
         while (paramNames.hasMoreElements()) {
@@ -208,46 +239,20 @@ public class FrontServlet  extends HttpServlet{
             }
         }
     }
-    private void processParams(HttpServletRequest req, HttpServletResponse res, Parameter[] parameters, Object[] arg, PrintWriter out) throws Exception {
-        res.setContentType("text/html");
-        ServletContext result = this.getServletContext();
-    
-        for (int j = 0; j < parameters.length; j++) {
-            Param annotation = parameters[j].getAnnotation(Param.class);
-            if (annotation != null) {
-                String paramName = annotation.p();
-                String[] paramValues = req.getParameterValues(paramName);
-                out.println("KUKU  = " + parameters[j].getType() + "<br>");
-                out.println("UPLOAD !!!!!!!!!");
-                if (parameters[j].getType().equals(FileUpload.class)) {
-                    FileUpload fl = new FileUpload();
-                    out.println("UPLOAD !!!!!!!!!");
-                    String uploadPath = getServletContext().getRealPath("") + File.separator + "dev";
-                    File uploadDir = new File(uploadPath);
-                    if (!uploadDir.exists()) {
-                        uploadDir.mkdir();
+    public void processParams(HttpServletRequest req, Parameter[] parameters, Object[] arg) throws Exception {
+        Enumeration<String> paramNames = req.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            for (int j = 0; j < parameters.length; j++) {
+                if (paramName.equals(parameters[j].getAnnotation(Param.class).p())) {
+                    String[] paramValues = req.getParameterValues(paramName);
+                    if (paramValues != null && paramValues.length ==1) {
+                        arg[j] = castValue(parameters[j].getType(), paramValues[0]);
                     }
-    
-                    List<Part> parts = (List<Part>) req.getParts();
-                    for (Part part : parts) {
-                        res.getWriter().println(parts);
-                        String fileName = extractFileName(part);
-                        part.write(uploadPath + File.separator + fileName);
-                        fl.setnameFile(fileName);
-                    }
-                    arg[j] = fl;
-                
-                }
-                if (paramValues != null && paramValues.length == 1) {
-                    arg[j] = castValue(parameters[j].getType(), paramValues[0]);
                 }
             }
         }
-        out.flush(); // Rafraîchir le flux de sortie
     }
-    
-    
-
     private String extractFileName(Part part) {
         String contentDisposition = part.getHeader("content-disposition");
         String[] items = contentDisposition.split(";");
@@ -258,6 +263,4 @@ public class FrontServlet  extends HttpServlet{
         }
         return "";
     }
-
-
 }   
